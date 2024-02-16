@@ -8,6 +8,8 @@ public class MapGenerator : MonoBehaviour
     [SerializeField] Texture2D heightMap;
     [SerializeField] Texture2D landCover;
     [SerializeField] int meterPerPixel = 2;
+    [SerializeField] GameObject Map;
+    [SerializeField] int heightScale = 500;
     //private int lastMeterPerPixel;
 
     private Vector3[] vertexs;
@@ -21,7 +23,7 @@ public class MapGenerator : MonoBehaviour
     {
         mesh = new Mesh();
         mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-        GetComponent<MeshFilter>().mesh = mesh;
+        Map.GetComponent<MeshFilter>().mesh = mesh;
         //lastMeterPerPixel = meterPerPixel;
     }
 
@@ -52,7 +54,7 @@ public class MapGenerator : MonoBehaviour
             for (int x = 0; x < width; x++, i++)
             {
                 vertexColors[i] = landCover.GetPixel(x, y);
-                vertexs[i] = new Vector3(x * meterPerPixel, pixelData[i].grayscale * 500, y * meterPerPixel);
+                vertexs[i] = new Vector3(x * meterPerPixel, pixelData[i].grayscale * heightScale, y * meterPerPixel);
                 uv[i] = new Vector2((float)x / (width), (float)y / (height));
 
                 if(y != height - 1 && x != width - 1)
@@ -83,7 +85,7 @@ public class MapGenerator : MonoBehaviour
     void GetVertexColors()
     {
         Color[] c = mesh.colors;
-        Debug.Log(c[0]);
+        
     }
 
     void Update()
