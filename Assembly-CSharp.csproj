@@ -61,8 +61,14 @@
     <Analyzer Include="C:\Program Files\Unity 2023.2.9f1\Editor\Data\Tools\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\Character.cs" />
     <Compile Include="Assets\Scripts\MapGenerator.cs" />
+    <Compile Include="Assets\Scripts\LODMatrix.cs" />
+    <Compile Include="Assets\Scripts\MapGen2.cs" />
     <Compile Include="Assets\Scripts\HeightMapApplier.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Assets\Shaders\GrassShader.compute" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">
