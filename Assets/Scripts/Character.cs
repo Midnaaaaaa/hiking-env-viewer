@@ -16,9 +16,21 @@ public class Character : MonoBehaviour
         rotationX += Input.GetAxis("Mouse Y") * -1 * sensitivity;
         transform.localEulerAngles = new Vector3(rotationX, rotationY, 0);
 
-        if (Input.GetKeyDown(KeyCode.W))
+        if (Input.GetKey(KeyCode.W))
         {
             transform.position += transform.forward * velocity;
+        }
+        if (Input.GetKey(KeyCode.S))
+        {
+            transform.position += -transform.forward * velocity;
+        }
+        if (Input.GetKey(KeyCode.D))
+        {
+            transform.position += transform.right * velocity;
+        }
+        if (Input.GetKey(KeyCode.D))
+        {
+            transform.position += -transform.right * velocity;
         }
     }
 }

@@ -53,6 +53,10 @@ public class MapGen2 : MonoBehaviour
         for (int i = 0; i < numOfChunks; i++)
         {
             meshes.Add(new List<GameObject>());
+            for (int j = 0; j < numOfChunks; j++)
+            {
+                meshes[i].Add(null);
+            }
         }
     }
 
@@ -67,21 +71,53 @@ public class MapGen2 : MonoBehaviour
         }
     }
 
+    
+    private Vector2Int WorldToGridPosition(Vector3 position) {
+        return new Vector2Int(Mathf.FloorToInt(position.x / (chunkSize * meterPerPixel)), Mathf.FloorToInt((position.z / (chunkSize * meterPerPixel)))); 
+    }
+    
 
-    private void SetRandomPosition()
+
+    private void SetStartingPosition()
     {
+        character.transform.position = new Vector3(transform.position.x + 4, transform.position.y + 1000, transform.position.z + 4);
+        actualTile = WorldToGridPosition(character.transform.position);
+        lastActualTile = actualTile;
     }
 
 
     private void Start()
     {
-        SetRandomPosition();
-        actualTile = new Vector2Int(2, 2);
-        lastActualTile = new Vector2Int(3,3); // has to be actualTile
+        SetStartingPosition();
+        foreach (var chunk in surroundingTiles) //Create CHUNKS
+        {
+            int LOD = chunk.z;
+            int xCoord = chunk.x + actualTile.x;
+            int yCoord = chunk.y + actualTile.y;
+            if (LODSMatrixList[LOD].isInside(xCoord, yCoord) && !LODSMatrixList[LOD].isCreated(xCoord, yCoord))
+            {
+                CreateChunk(xCoord, yCoord, LOD);
+            }
+        }
+
+        foreach (var chunk in surroundingTiles)
+        {
+
+            int LOD = chunk.z;
+            int xCoord = chunk.x + actualTile.x;
+            int yCoord = chunk.y + actualTile.y;
+            if (LODSMatrixList[LOD].isInside(xCoord, yCoord))
+            {
+                InstantiateChunk(xCoord, yCoord, LOD);
+            }
+        }
+        lastActualTile = actualTile;
     }
 
     private void Update()
     {
+        actualTile = WorldToGridPosition(character.transform.position);
+
         if(lastActualTile != actualTile) //Ha cambiado de CHUNK
         {
             foreach (var chunk in surroundingTiles) //Create CHUNKS
@@ -95,15 +131,29 @@ public class MapGen2 : MonoBehaviour
                 }
             }
 
+            foreach (var chunk in surroundingTiles) //Desactivar CHUNKS antiguos
+            {
+                int LOD = chunk.z;
+                int xCoord = chunk.x + lastActualTile.x;
+                int yCoord = chunk.y + lastActualTile.y;
+                if (LODSMatrixList[LOD].isInside(xCoord, yCoord))
+                {
+                    if (meshes[xCoord][yCoord] != null) meshes[xCoord][yCoord].SetActive(false);
+                }
+            }
+
             foreach (var chunk in surroundingTiles)
             {
-
                 int LOD = chunk.z;
                 int xCoord = chunk.x + actualTile.x;
                 int yCoord = chunk.y + actualTile.y;
                 if(LODSMatrixList[LOD].isInside(xCoord, yCoord))
                 {
-                    InstantiateChunk(xCoord, yCoord, LOD);
+                    if(meshes[xCoord][yCoord] != null) //Esta creado el CHUNK
+                    {
+                        meshes[xCoord][yCoord].SetActive(true); //Lo activamos
+                    }
+                    else InstantiateChunk(xCoord, yCoord, LOD); //Lo instanciamos
                 }
             }
             lastActualTile = actualTile;
@@ -172,7 +222,7 @@ public class MapGen2 : MonoBehaviour
         MeshRenderer meshRenderer = meshObject.AddComponent<MeshRenderer>();
         meshRenderer.material = new Material(Shader.Find("Standard"));
 
-        meshes[i].Add(meshObject);
+        meshes[i][j] = meshObject;
     }
 
 
