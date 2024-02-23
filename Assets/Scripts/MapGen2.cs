@@ -181,7 +181,7 @@ public class MapGen2 : MonoBehaviour
                 int mappedXToTexture = (int)(i + chunkCoordX * (chunkSizeLOD - 1));
                 int mappedYToTexture = (int)(j + chunkCoordY * (chunkSizeLOD - 1));
 
-                vertexs.Add(origin + new Vector3((i * offsetX) * meterPerPixel, heightMap.GetPixel(mappedXToTexture, mappedYToTexture, LOD).grayscale * heightScale, (j * offsetZ) * meterPerPixel));
+                vertexs.Add(origin + new Vector3((i * offsetX) * meterPerPixel, heightMap.GetPixel(mappedXToTexture, mappedYToTexture, LOD).r * heightScale, (j * offsetZ) * meterPerPixel));
                 uv.Add(origin + new Vector3((i * offsetX) / chunkSizeLOD, (j * offsetZ) / chunkSizeLOD));
 
                 if (j != chunkSizeLOD - 1 && i != chunkSizeLOD - 1)

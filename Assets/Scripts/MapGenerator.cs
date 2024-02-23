@@ -72,7 +72,7 @@ public class MapGenerator : MonoBehaviour
             for (int x = 0; x < width; x++, i++)
             {
                 vertexColors[i] = landCover.GetPixel(x, y);
-                vertexs[i] = new Vector3(x * meterPerPixel, pixelData[i].grayscale * heightScale, y * meterPerPixel);
+                vertexs[i] = new Vector3(x * meterPerPixel, pixelData[i].r * heightScale, y * meterPerPixel);
                 if (i == 0) Debug.Log(vertexs[i]);
                 uv[i] = new Vector2((float)x / (width), (float)y / (height));
 
