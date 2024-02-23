@@ -184,7 +184,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   heightMap: {fileID: 2800000, guid: b59c55c51dffc0441ae84ce2cdc4b394, type: 3}
-  numOfChunks: 16
+  numOfChunks: 4
   numLODS: 4
   heightScale: 1400
   meterPerPixel: 2

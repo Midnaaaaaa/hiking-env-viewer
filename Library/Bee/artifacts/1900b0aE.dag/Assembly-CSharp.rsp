@@ -392,6 +392,7 @@
 "Assets/Scripts/LODMatrix.cs"
 "Assets/Scripts/MapGen2.cs"
 "Assets/Scripts/MapGenerator.cs"
+"Assets/Scripts/Meshes.cs"
 -langversion:9.0
 
 /deterministic

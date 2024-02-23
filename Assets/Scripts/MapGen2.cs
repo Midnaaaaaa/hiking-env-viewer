@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class MapGen2 : MonoBehaviour
@@ -20,6 +21,9 @@ public class MapGen2 : MonoBehaviour
 
     private List<List<GameObject>> meshes;
 
+    private List<Meshes> LODSMeshes;
+
+
     private List<Vector3Int> surroundingTiles;
 
     public int meterPerPixel = 2;
@@ -31,32 +35,28 @@ public class MapGen2 : MonoBehaviour
         chunkSize = heightMap.width / numOfChunks;
 
         InitializeLODSMatrixList();
-        InitializeMeshes();
+        InitializeLODSMeshes();
 
         surroundingTiles = new List<Vector3Int>{ //Z == 1 -> LOD1, Z == 2 -> LOD2 ...
 
             new Vector3Int(0,  0, 0),  // Centro 
-            new Vector3Int(-1, 0, 0),  // Izquierda
-            new Vector3Int(1,  0, 0),  // Derecha
-            new Vector3Int(0,  1, 0),  // Arriba
-            new Vector3Int(0, -1, 0),  // Abajo
-            new Vector3Int(-1, 1, 0),  // Arriba izquierda
-            new Vector3Int(1,  1, 0),  // Arriba derecha
-            new Vector3Int(-1,-1, 0),  // Abajo izquierda
-            new Vector3Int(1, -1, 0)   // Abajo derecha
+            new Vector3Int(-1, 0, 3),  // Izquierda
+            new Vector3Int(1,  0, 3),  // Derecha
+            new Vector3Int(0,  1, 3),  // Arriba
+            new Vector3Int(0, -1, 3),  // Abajo
+            new Vector3Int(-1, 1, 3),  // Arriba izquierda
+            new Vector3Int(1,  1, 3),  // Arriba derecha
+            new Vector3Int(-1,-1, 3),  // Abajo izquierda
+            new Vector3Int(1, -1, 3)   // Abajo derecha
         };
     }
 
-    private void InitializeMeshes()
+    private void InitializeLODSMeshes()
     {
-        meshes = new List<List<GameObject>>();
-        for (int i = 0; i < numOfChunks; i++)
+        LODSMeshes = new List<Meshes>();
+        for (int i = 0; i < numLODS; i++)
         {
-            meshes.Add(new List<GameObject>());
-            for (int j = 0; j < numOfChunks; j++)
-            {
-                meshes[i].Add(null);
-            }
+            LODSMeshes.Add(new Meshes(numOfChunks));
         }
     }
 
@@ -67,13 +67,18 @@ public class MapGen2 : MonoBehaviour
         
         for (int i = 0; i < numLODS; i++)
         {
-            LODSMatrixList.Add(new LODMatrix(chunkSize / (int)(Mathf.Pow(2,i)), i == 0 ? heightMap.width : heightMap.width / (2 * i)));
+            LODSMatrixList.Add(new LODMatrix(chunkSize / (int)(Mathf.Pow(2,i)), i == 0 ? heightMap.width : heightMap.width / (int)(Mathf.Pow(2, i))));
         }
     }
 
     
     private Vector2Int WorldToGridPosition(Vector3 position) {
-        return new Vector2Int(Mathf.FloorToInt(position.x / (chunkSize * meterPerPixel)), Mathf.FloorToInt((position.z / (chunkSize * meterPerPixel)))); 
+        Vector2Int gridPosition = new Vector2Int(Mathf.FloorToInt(position.x / (chunkSize * meterPerPixel)), Mathf.FloorToInt((position.z / (chunkSize * meterPerPixel))));
+        if (!LODSMatrixList[0].isInside(gridPosition.x, gridPosition.y))
+        {
+            return lastActualTile;
+        }
+        return gridPosition;
     }
     
 
@@ -85,32 +90,59 @@ public class MapGen2 : MonoBehaviour
         lastActualTile = actualTile;
     }
 
-
-    private void Start()
+    private void CreateAllChunks()
     {
-        SetStartingPosition();
-        foreach (var chunk in surroundingTiles) //Create CHUNKS
+        for (int i = 0; i < numOfChunks; i++)
         {
-            int LOD = chunk.z;
-            int xCoord = chunk.x + actualTile.x;
-            int yCoord = chunk.y + actualTile.y;
-            if (LODSMatrixList[LOD].isInside(xCoord, yCoord) && !LODSMatrixList[LOD].isCreated(xCoord, yCoord))
+            for (int j = 0; j < numOfChunks; j++)
             {
-                CreateChunk(xCoord, yCoord, LOD);
+                for (int k = 0; k < numLODS; k++)
+                {
+                    CreateChunk(i, j, k);
+                }
             }
         }
+    }
 
-        foreach (var chunk in surroundingTiles)
+    private void InstantiateAllChunks()
+    {
+        for (int i = 0; i < numOfChunks; i++)
         {
+            for (int j = 0; j < numOfChunks; j++)
+            {
+                for (int LOD = 0; LOD < numLODS; LOD++)
+                {
+                    InstantiateChunk(i, j, LOD);
+                    LODSMeshes[LOD].SetMeshStatus(i, j, false);
+                }
+            }
+        }
+    }
 
+    private void ActivateFirstChunks()
+    {
+        foreach (var chunk in surroundingTiles) //Activate first CHUNKS
+        {
             int LOD = chunk.z;
             int xCoord = chunk.x + actualTile.x;
             int yCoord = chunk.y + actualTile.y;
             if (LODSMatrixList[LOD].isInside(xCoord, yCoord))
             {
-                InstantiateChunk(xCoord, yCoord, LOD);
+                LODSMeshes[LOD].SetMeshStatus(xCoord, yCoord, true);
             }
         }
+
+    }
+
+
+    private void Start()
+    {
+        SetStartingPosition();
+        CreateAllChunks();
+        InstantiateAllChunks();
+        ActivateFirstChunks();
+
+
         lastActualTile = actualTile;
     }
 
@@ -120,40 +152,27 @@ public class MapGen2 : MonoBehaviour
 
         if(lastActualTile != actualTile) //Ha cambiado de CHUNK
         {
-            foreach (var chunk in surroundingTiles) //Create CHUNKS
-            {
-                int LOD = chunk.z;
-                int xCoord = chunk.x + actualTile.x;
-                int yCoord = chunk.y + actualTile.y;
-                if(LODSMatrixList[LOD].isInside(xCoord, yCoord) && !LODSMatrixList[LOD].isCreated(xCoord, yCoord))
-                {
-                    CreateChunk(xCoord, yCoord, LOD);
-                }
-            }
-
             foreach (var chunk in surroundingTiles) //Desactivar CHUNKS antiguos
             {
-                int LOD = chunk.z;
                 int xCoord = chunk.x + lastActualTile.x;
                 int yCoord = chunk.y + lastActualTile.y;
-                if (LODSMatrixList[LOD].isInside(xCoord, yCoord))
+                for (int LOD = 0; LOD < numLODS; LOD++)
                 {
-                    if (meshes[xCoord][yCoord] != null) meshes[xCoord][yCoord].SetActive(false);
+                    if (LODSMatrixList[LOD].isInside(xCoord, yCoord))
+                    {
+                        LODSMeshes[LOD].SetMeshStatus(xCoord, yCoord, false);
+                    }
                 }
             }
 
-            foreach (var chunk in surroundingTiles)
+            foreach (var chunk in surroundingTiles) //Activamos los CHUNKS nuevos
             {
                 int LOD = chunk.z;
                 int xCoord = chunk.x + actualTile.x;
                 int yCoord = chunk.y + actualTile.y;
-                if(LODSMatrixList[LOD].isInside(xCoord, yCoord))
+                if (LODSMatrixList[LOD].isInside(xCoord, yCoord))
                 {
-                    if(meshes[xCoord][yCoord] != null) //Esta creado el CHUNK
-                    {
-                        meshes[xCoord][yCoord].SetActive(true); //Lo activamos
-                    }
-                    else InstantiateChunk(xCoord, yCoord, LOD); //Lo instanciamos
+                    LODSMeshes[LOD].SetMeshStatus(xCoord, yCoord, true);
                 }
             }
             lastActualTile = actualTile;
@@ -215,14 +234,14 @@ public class MapGen2 : MonoBehaviour
         mesh.triangles = LODSMatrixList[LOD].GetChunkTriangles(i, j).ToArray();
         mesh.uv = LODSMatrixList[LOD].GetChunkUV(i, j).ToArray();
 
-        GameObject meshObject = new GameObject("Mesh_" + i.ToString() + ", " + j.ToString());
+        GameObject meshObject = new GameObject("Mesh_" + i.ToString() + ", " + j.ToString() + ", LOD: " + LOD);
         MeshFilter meshFilter = meshObject.AddComponent<MeshFilter>();
         mesh.RecalculateNormals();
         meshFilter.mesh = mesh;
         MeshRenderer meshRenderer = meshObject.AddComponent<MeshRenderer>();
         meshRenderer.material = new Material(Shader.Find("Standard"));
 
-        meshes[i][j] = meshObject;
+        LODSMeshes[LOD].AddMesh(i, j, meshObject);
     }
 
 
