@@ -7,7 +7,7 @@ public class MapGen2 : MonoBehaviour
 {
     [SerializeField] Texture2D heightMap;
     [SerializeField] int numOfChunks = 4; //32
-
+    [SerializeField] Texture2D landCover;
 
     private List<LODMatrix> LODSMatrixList;
 
@@ -23,6 +23,8 @@ public class MapGen2 : MonoBehaviour
 
     private List<Meshes> LODSMeshes;
 
+    private List<Texture2D> mipmaps;
+
 
     private List<Vector3Int> surroundingTiles;
 
@@ -36,6 +38,7 @@ public class MapGen2 : MonoBehaviour
 
         InitializeLODSMatrixList();
         InitializeLODSMeshes();
+        InitializeLandCoverMipmaps();
 
         surroundingTiles = new List<Vector3Int>{ //Z == 1 -> LOD1, Z == 2 -> LOD2 ...
 
@@ -49,6 +52,21 @@ public class MapGen2 : MonoBehaviour
             new Vector3Int(-1,-1, 3),  // Abajo izquierda
             new Vector3Int(1, -1, 3)   // Abajo derecha
         };
+    }
+
+    private void InitializeLandCoverMipmaps()
+    {
+        mipmaps = new List<Texture2D>{ landCover };
+
+        for (int i = 1; i < numLODS; i++)
+        {
+            int width = landCover.width / (1 << i);
+            int height = landCover.height / (1 << i);
+            Texture2D mipmap = new Texture2D(width, height, landCover.format, false);
+            Graphics.CopyTexture(landCover, 0, i, mipmap, 0, 0);
+            mipmap.Apply();
+            mipmaps.Add(mipmap);
+        }
     }
 
     private void InitializeLODSMeshes()
@@ -65,9 +83,9 @@ public class MapGen2 : MonoBehaviour
     {
         LODSMatrixList = new List<LODMatrix>();
         
-        for (int i = 0; i < numLODS; i++)
+        for (int LOD = 0; LOD < numLODS; LOD++)
         {
-            LODSMatrixList.Add(new LODMatrix(chunkSize / (int)(Mathf.Pow(2,i)), i == 0 ? heightMap.width : heightMap.width / (int)(Mathf.Pow(2, i))));
+            LODSMatrixList.Add(new LODMatrix(chunkSize / (int)(Mathf.Pow(2,LOD)), LOD == 0 ? heightMap.width : heightMap.width / (int)(Mathf.Pow(2, LOD))));
         }
     }
 
@@ -201,8 +219,8 @@ public class MapGen2 : MonoBehaviour
                 int mappedYToTexture = (int)(j + chunkCoordY * (chunkSizeLOD - 1));
 
                 vertexs.Add(origin + new Vector3((i * offsetX) * meterPerPixel, heightMap.GetPixel(mappedXToTexture, mappedYToTexture, LOD).r * heightScale, (j * offsetZ) * meterPerPixel));
-                uv.Add(origin + new Vector3((i * offsetX) / chunkSizeLOD, (j * offsetZ) / chunkSizeLOD));
-
+                uv.Add(new Vector2((i * offsetX) / chunkSizeLOD, (j * offsetZ) / chunkSizeLOD));
+                
                 if (j != chunkSizeLOD - 1 && i != chunkSizeLOD - 1)
                 {
                     int offset = i * chunkSizeLOD + j;
@@ -239,7 +257,15 @@ public class MapGen2 : MonoBehaviour
         mesh.RecalculateNormals();
         meshFilter.mesh = mesh;
         MeshRenderer meshRenderer = meshObject.AddComponent<MeshRenderer>();
-        meshRenderer.material = new Material(Shader.Find("Standard"));
+
+        Material mat = new Material(Shader.Find("TextureShader"));
+        mat.SetInt("_NumOfChunks", numOfChunks);
+        mat.SetTexture("_LandCover", mipmaps[LOD]);
+        mat.SetInt("_ChunkXCoord", i);
+        mat.SetInt("_ChunkYCoord", j);
+
+
+        meshRenderer.material = mat;
 
         LODSMeshes[LOD].AddMesh(i, j, meshObject);
     }

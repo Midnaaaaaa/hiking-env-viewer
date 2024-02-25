@@ -128,7 +128,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 695365030}
-  - component: {fileID: 695365027}
   - component: {fileID: 695365031}
   m_Layer: 0
   m_Name: MapGenerator
@@ -137,25 +136,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &695365027
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 695365026}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b911dee9f611cd244a14ec0f4b4ca12f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  heightMap: {fileID: 2800000, guid: d88d9a75f5f52e349ab602ed4c38d0e1, type: 3}
-  landCover: {fileID: 2800000, guid: d88d9a75f5f52e349ab602ed4c38d0e1, type: 3}
-  meterPerPixel: 1
-  Map: {fileID: 1358258533}
-  heightScale: 500
-  grass: {fileID: 4436629796669563929, guid: 1256087a6631941438b771d1e56d8234, type: 3}
-  grassRenderer: {fileID: 7200000, guid: d6304a94285d661419277774d01a126f, type: 3}
 --- !u!4 &695365030
 Transform:
   m_ObjectHideFlags: 0
@@ -185,6 +165,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   heightMap: {fileID: 2800000, guid: b59c55c51dffc0441ae84ce2cdc4b394, type: 3}
   numOfChunks: 4
+  landCover: {fileID: 2800000, guid: 8a1f021f0ff013c43af4bbffaa1e0ff7, type: 3}
   numLODS: 4
   heightScale: 1400
   meterPerPixel: 2
@@ -352,11 +333,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a3084cb3b2bd0a04b9403c92c6e8c120, type: 3}
---- !u!1 &1358258533 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2792001477183533024, guid: a3084cb3b2bd0a04b9403c92c6e8c120, type: 3}
-  m_PrefabInstance: {fileID: 1269680880}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1766334304
 PrefabInstance:
   m_ObjectHideFlags: 0
