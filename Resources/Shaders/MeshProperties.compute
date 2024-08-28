@@ -1,0 +1,127 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+AppendStructuredBuffer<float3> grassMeshProperties;
+AppendStructuredBuffer<float3> treesMeshProperties;
+
+StructuredBuffer<float> probs;
+
+int probsLength;
+
+int chunkX;
+int chunkY;
+int slopeAngleSize;
+float density;
+int numOfChunks;
+uint1 metersPerPixel;
+int indexWherePathBegins;
+uint1 length;
+float4 origin;
+int generalSize;
+int numOfTexts;
+
+Texture2DArray slopeAngleMap;
+Texture2DArray contTexts;
+
+RWTexture2D<float4> heightMap;
+float heightScale;
+int pathContributionSize;
+
+
+float generateRandomNum(float min, float max, float2 co)
+{
+    float rand = frac(sin(dot(co, float2(12.9898, 78.233))) * 43758.5453);
+    return min + rand * (max - min);
+}
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= uint1(round(density * length)) / metersPerPixel || id.y >= uint1(round(density * length)) / metersPerPixel)
+        return;
+
+    float heightMapScaleFactor = 1 / float(metersPerPixel); 
+    float slopeAngleMapScaleFactor = slopeAngleSize / float(length * numOfChunks); 
+    float contributionTextFactor = pathContributionSize / ((float) density * length / metersPerPixel);
+	
+    float3 pos = origin.xyz + float3(id.x * metersPerPixel / (float) density, 700, id.y * metersPerPixel / (float)  density);
+   
+    float2 posSlopeAngle = float2(pos.x * slopeAngleMapScaleFactor, pos.z * slopeAngleMapScaleFactor);
+    float2 floorPosSlope = floor(posSlopeAngle);
+    float2 fracPosSlope = frac(posSlopeAngle);
+    
+    float h00 = slopeAngleMap[uint3(floorPosSlope, 0)].r;
+    float h10 = slopeAngleMap[uint3(floorPosSlope + float2(1, 0), 0)].r;
+    float h01 = slopeAngleMap[uint3(floorPosSlope + float2(0, 1), 0)].r;
+    float h11 = slopeAngleMap[uint3(floorPosSlope + float2(1, 1), 0)].r;
+    
+    float h0 = lerp(h00, h10, fracPosSlope.x);
+    float h1 = lerp(h01, h11, fracPosSlope.x);
+    
+    float slope = lerp(h0, h1, fracPosSlope.y);
+    
+    if (slope > 0.35)
+        return;
+    
+    float2 posHeightMap = float2(pos.x * heightMapScaleFactor, pos.z * heightMapScaleFactor);
+    float2 floorPos = floor(posHeightMap);
+    float2 fracPos = frac(posHeightMap);
+
+    h00 = heightMap[floorPos].r * heightScale;
+    h10 = heightMap[floorPos + float2(1, 0)].r * heightScale;
+    h01 = heightMap[floorPos + float2(0, 1)].r * heightScale;
+    h11 = heightMap[floorPos + float2(1, 1)].r * heightScale;
+
+    h0 = lerp(h00, h10, fracPos.x);
+    h1 = lerp(h01, h11, fracPos.x);
+
+    pos.y = lerp(h0, h1, fracPos.y);
+    
+    float2 uvs = float2((pos.x % length) / (float) length, (pos.z % length) / (float) length);
+
+    if (contributionTextFactor > 0)
+    {
+        for (int j = 0; j < numOfTexts; j++) //Calcular nivell de vermell de cada landCover
+        {
+            if (contTexts[uint3(uint2(id.xy * contributionTextFactor), j)].r > 0)
+                return;
+            else if (contTexts[uint3(uint2(id.x + 1, id.y) * contributionTextFactor, j)].r > 0)
+                return;
+            else if (contTexts[uint3(uint2(id.x - 1, id.y) * contributionTextFactor, j)].r > 0)
+                return;
+            else if (contTexts[uint3(uint2(id.x, id.y + 1) * contributionTextFactor, j)].r > 0)
+                return;
+            else if (contTexts[uint3(uint2(id.x, id.y - 1) * contributionTextFactor, j)].r > 0)
+                return;
+            else if (contTexts[uint3(uint2(id.x + 1, id.y - 1) * contributionTextFactor, j)].r > 0)
+                return;
+            else if (contTexts[uint3(uint2(id.x - 1, id.y - 1) * contributionTextFactor, j)].r > 0)
+                return;
+            else if (contTexts[uint3(uint2(id.x - 1, id.y + 1) * contributionTextFactor, j)].r > 0)
+                return;
+            else if (contTexts[uint3(uint2(id.x + 1, id.y + 1) * contributionTextFactor, j)].r > 0)
+                return;
+        }
+    }
+    
+    float cumulativeProb = 0.0;
+    float text = generateRandomNum(0, 1, id.xy);
+    
+    for (int i = 0; i < probsLength; ++i)
+    {
+        cumulativeProb += probs[i] / 100.0;
+        if (text <= cumulativeProb)
+        {
+            switch (i)
+            {
+                case 0:
+                    grassMeshProperties.Append(pos);
+                    break;
+                case 1:
+                    treesMeshProperties.Append(pos);
+                    break;
+            }
+            break;
+        }
+    }
+}

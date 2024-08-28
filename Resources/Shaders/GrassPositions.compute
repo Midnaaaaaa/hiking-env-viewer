@@ -1,0 +1,76 @@
+#pragma kernel CSMain
+
+//struct PosAndUVs
+//{
+//    float3 position;
+//    float2 uvs;
+//};
+
+RWStructuredBuffer<float3> positionBuffer;
+RWStructuredBuffer<float4x4> modelTransformBuffer;
+RWStructuredBuffer<int> typeOfTextureBuffer;
+RWStructuredBuffer<float> textureProbabilities;
+RWStructuredBuffer<float> plantHeight;
+RWStructuredBuffer<float> plantCanopy;
+
+int numOfTextures;
+int plantHeightBufferLength;
+int plantCanopyBufferLength;
+uint instanceCount;
+int offsetSize;
+
+float modelHighestPoint;
+float modelWidestPoint;
+
+
+
+
+float generateRandomNum(float min, float max, float2 co){
+    float rand = frac(sin(dot(co, float2(12.9898,78.233))) * 43758.5453);
+    return min + rand * (max - min);
+}
+
+[numthreads(64, 1, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= instanceCount)
+        return;
+    
+    float2 co = positionBuffer[id.x].xy;
+    float heightScale;
+    float widthScale;
+    if (plantHeightBufferLength > 0 && plantCanopyBufferLength > 0)
+    {
+        heightScale = plantHeight[id.x] / modelHighestPoint;
+        widthScale = plantCanopy[id.x] / modelWidestPoint;
+    }
+    else
+    {
+        heightScale = generateRandomNum(1, 4, id.xy);
+        widthScale = 1;
+    }
+    
+    float offsetX = generateRandomNum(-offsetSize, offsetSize, id.xy);
+    float offsetZ = generateRandomNum(-offsetSize, offsetSize, id.xy + 1);
+    float rotationY = generateRandomNum(-3.14159, 3.14159, id.xy);  // Generate a random rotation in Y axis
+    float text = generateRandomNum(0, 1, id.xy);                    // Generate a random value to assign a texture
+
+    float4x4 modelTransform = float4x4(
+        cos(rotationY) * widthScale, 0.0, sin(rotationY) * widthScale, positionBuffer[id.x].x + offsetX,
+        0.0, heightScale, 0.0, positionBuffer[id.x].y,
+        -sin(rotationY) * widthScale, 0.0, cos(rotationY) * widthScale, positionBuffer[id.x].z + offsetZ,
+        0.0, 0.0, 0.0, 1.0
+    );
+    
+
+    float cumulativeProb = 0.0;
+    for(int i = 0; i < numOfTextures; ++i){
+        cumulativeProb += textureProbabilities[i] / 100.0;
+        if(text <= cumulativeProb){
+            typeOfTextureBuffer[id.x] = i;
+            break;
+        }
+    }
+    modelTransformBuffer[id.x] = modelTransform;
+
+}

@@ -1,0 +1,56 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+
+
+
+RWStructuredBuffer<float3> vertexs;
+RWStructuredBuffer<int> triangles;
+RWStructuredBuffer<float2> uv;
+
+
+int chunkCoordX;
+int chunkCoordY;
+int LOD;
+
+float offsetX;
+float offsetZ;
+int meterPerPixel;
+uint chunkSizeLOD;
+float4 origin;
+float heightScale;
+
+RWTexture2D<float4> heightMap;
+int heightMapSize;
+
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID, uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID)
+{
+    if (id.x >= chunkSizeLOD || id.y >= chunkSizeLOD) return;
+
+    int mappedXToTexture = (int)(id.x + chunkCoordX * (chunkSizeLOD - 1));
+    int mappedYToTexture = (int)(id.y + chunkCoordY * (chunkSizeLOD - 1));
+
+    float3 position = origin.xyz + float3((id.x * offsetX) * meterPerPixel, heightMap[float2(mappedXToTexture, mappedYToTexture)].x * heightScale, (id.y * offsetZ) * meterPerPixel);
+    float2 uvCoord = float2(id.x / (float)(chunkSizeLOD - 1), id.y / (float)(chunkSizeLOD - 1));
+    
+    vertexs[id.x * chunkSizeLOD + id.y] = position;
+    uv[id.x * chunkSizeLOD + id.y] = uvCoord;
+
+    if (id.x < chunkSizeLOD - 1 && id.y < chunkSizeLOD - 1)
+    {
+        int offset = id.y * chunkSizeLOD + id.x;
+        int triangleOffset = id.y * (chunkSizeLOD-1) + id.x;
+
+        triangles[triangleOffset * 6] = offset;
+        triangles[triangleOffset * 6 + 1] = offset + chunkSizeLOD + 1;
+        triangles[triangleOffset * 6 + 2] = offset + chunkSizeLOD;
+
+        triangles[triangleOffset * 6 + 3] = offset;
+        triangles[triangleOffset * 6 + 4] = offset + 1;
+        triangles[triangleOffset * 6 + 5] = offset + chunkSizeLOD + 1;
+    }
+}

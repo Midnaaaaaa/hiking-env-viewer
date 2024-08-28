@@ -1,0 +1,89 @@
+{
+  "type": "FeatureCollection",
+  "name": "paths_aiguestortes",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:EPSG::25831"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "way/32805174",
+        "@id": "way/32805174",
+        "abandoned:highway": null,
+        "access": null,
+        "width": null,
+        "wikidata": null,
+        "wikipedia": null,
+        "id_2": null,
+        "highway": "path"
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [
+            [
+              723.791,
+              5619.537
+            ],
+            [
+              752.097, 
+              5668.966
+            ],
+            [
+              838.1487,
+              5819.234
+            ],
+            [
+              903.791,
+              5830.537
+            ],
+            [
+              1012.791,
+              5866.537
+            ],
+            [
+              1030.791,
+              5840.537
+            ],
+            [
+              1060.791,
+              5820.537
+            ],
+            [
+              1120.791,
+              5810.537
+            ],
+            [
+              1194.791,
+              5802.537
+            ],
+            [
+              1230.791,
+              5842.537
+            ],
+            [
+              1393.791,
+              5880.537
+            ],
+            [
+              1457.1487,
+              5982.234
+            ],
+            [
+              1494.791,
+              6130.537
+            ],
+            [
+              1551.791,
+              6256.537
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}
